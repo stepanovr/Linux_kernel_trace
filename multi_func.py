@@ -16,6 +16,35 @@ from tkinter import ttk
 
 from tkinter import filedialog
 
+##############################
+
+import cProfile, pstats, io
+
+def profile(fnc):
+
+    """A decorator that uses cProfile to profile a function"""
+
+    def inner(*args, **kwargs):
+
+        pr = cProfile.Profile()
+        pr.enable()
+        retval = fnc(*args, **kwargs)
+        pr.disable()
+        s = io.StringIO()
+        sortby = 'cumulative'
+        ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+        ps.print_stats()
+        print(s.getvalue())
+        return retval
+
+    return inner
+
+
+
+##################################
+
+
+
 
 force = "force       "
 duration = "duration"
@@ -331,6 +360,7 @@ class Application(Frame):
   def select_ktrace(self):
     self.set_skin(kprobe_skin)
 
+  @profile
   def read_trace(self):
     print("read_trace")
 
