@@ -11,10 +11,7 @@ import time
 from tkinter import *
 import tkinter as tk
 import re
-
-from tkinter import ttk
-
-from tkinter import filedialog
+import json
 
 
 force = "force       "
@@ -28,10 +25,10 @@ none = "NONE    "
 
 trace_default = "p:icmp_out_p icmp_out_count\nr:icmp_out_r icmp_out_count"
 
-modes = ["ktrace", "func"]
+modes = ["kprobe", "func"]
 
-op_name_ktrace = "Operation Ktrace"
-op_butt_ktrace = "Read Ktrace"
+op_name_kprobe = "Operation kprobe"
+op_butt_kprobe = "Read kprobe"
 
 op_name_func = "Operation Func"
 op_butt_func = "Read Func"
@@ -66,7 +63,6 @@ class control():
       self.app.udp_exchange(prog[0][cmd], prog[1][cmd])
 
   def handle(self, cmd, cond):
-#    print(f'cmd: {cmd}                            cond: {cond}')
     print(cmd)
 
   def clear(self):
@@ -92,6 +88,7 @@ class Application(Frame):
     self.grid()
     self.create_widgets()
     self.skin = skin(self, kprobe_skin)
+    self.operation = "kprobe" 
     self.switch_mode(self.skin)
     print("Application started")
 
@@ -121,7 +118,7 @@ class Application(Frame):
     self.serv_addr_ent = Entry(self)
     self.serv_addr_ent.grid(row = 1, column = 1, sticky = W)
     self.serv_addr_ent.delete(0,END)
-    self.serv_addr_ent.insert(0, "192.168.1.125" )
+    self.serv_addr_ent.insert(0, "192.168.1.239" )
     Label(self,
       text = "Port:"
       ).grid(row = 2, column = 0, sticky = W)
@@ -148,13 +145,13 @@ class Application(Frame):
     self.story_txt.grid(row = 10, column = 0, columnspan = 4)
 
     self.act_name_str = StringVar()
-    self.act_name_str.set(op_name_ktrace)
+    self.act_name_str.set(op_name_kprobe)
     self.action_name = Label(self,
       textvariable = self.act_name_str
       ).grid(row = 7, column = 0, sticky = W)
 
     self.act_button_str = StringVar()
-    self.act_button_str.set(op_butt_ktrace)
+    self.act_button_str.set(op_butt_kprobe)
 
     self.action_button = Button(self,
       textvariable = self.act_button_str,
@@ -217,26 +214,41 @@ class Application(Frame):
     bytesToSend = str.encode(request)
     self.udp_socket.sendto(bytesToSend, self.serverAddressPort)
     self.udp_socket.settimeout(2.0)
+    durat = int(self.duration_ent.get())
+    delta = 1
+    if durat > delta:
+      time.sleep(durat - delta)
     self.log_message(request)
 
     output = ""
+    datalen = 0
+    state = "start"
     while True:
       try:
         val, address = self.udp_socket.recvfrom(1024)
         data = str(val, "utf-8")
-        if disp:
-          print(data)
-
-        output += data
-        output += "\n"
-
+        match state:
+           case "start":
+               state = "get_data"
+               counter = int(data)
+           case "get_data":
+               counter -= 1
+               output += data
+               if counter == 0:
+                 break
       except socket.timeout:
+        print("udp_exchange except")
         self.log_message(output)
+ 
         if disp:
           self.display_message(output)
         break;
-
+    output += "\n"
+    if disp:
+        print(output)
+        self.display_message(output)
     self.udp_socket.close()
+    self.log_message(output)
     return output
 
   def write_reg(self):
@@ -327,11 +339,37 @@ class Application(Frame):
 
   def select_func(self):
     self.set_skin(func_skin)
+    self.operation = "func"
 
-  def select_ktrace(self):
+  def select_kprobe(self):
     self.set_skin(kprobe_skin)
+    self.operation = "kprobe"
 
   def read_trace(self):
+    options = {}
+    options["force"] = self.force.get()
+    options["duration"] = self.duration.get()
+    options["pid"] = self.pid.get()
+    options["tid"] = self.tid.get()
+    options["filt"] = self.filter.get()
+    options["header"] = self.header.get()
+    options["stack"] = self.stack.get()
+    options["duration_val"] = int(self.duration_ent.get())
+    options["pid_val"] = int(self.pid_ent.get())
+    options["tid_val"] = int(self.tid_ent.get())
+    options["filter_val"] = self.filter_ent.get()
+#    options["trace_func"] = 
+    options["operation"] = self.operation
+    traces = ''
+    for trace in self.gettrace():
+      traces += trace + '\n'
+    options["trace_func"] = traces.rstrip()
+    opts_str = serialized = json.dumps(options)
+    opts_dict = json.loads(opts_str)
+    res = self.udp_exchange(opts_str, disp = True).rstrip()
+
+    return
+    
     print("read_trace")
 
     self.act_name_str.set(self.skin.op_name)
@@ -387,7 +425,7 @@ class kprobe():
   def fs_addr(self, local):
     return self.tracing + local
 
-  def ktrace_config(self):
+  def kprobe_config(self):
     self.opt_pid = self.app.pid.get()
     self.opt_tid = self.app.tid.get()
     self.opt_filter = self.app.filter.get()
@@ -414,7 +452,7 @@ class kprobe():
     self.ctrl.clear()
     self.global_trace_enable('0')
     self.reset_tracer()
-    self.stacktrace_enable('0')
+    self.stackprobe_enable('0')
     self.pre_action = self.ctrl.extract()
     self.process(self.ctrl.result)
     self.app.action = self.app.skin.actions["config_once"]
@@ -495,7 +533,7 @@ class kprobe():
       self.filter_enable()
 
     if self.opt_stack:
-      self.stacktrace_enable('1')
+      self.stackprobe_enable('1')
 
 
     self.kprobe_enable('1')
@@ -586,8 +624,8 @@ class kprobe():
     print(self.filter)
     self.ctrl.new_cmd('echo', '"' + self.filter_str + '"', '>', name, False)
 
-  def stacktrace_enable(self, enable):
-    name = self.app.kp.tracing + '/options/stacktrace'
+  def stackprobe_enable(self, enable):
+    name = self.app.kp.tracing + '/options/stackprobe'
     self.ctrl.new_cmd('echo', enable, '>', name, False)
 
   def kprobe_enable(self, enable):
@@ -675,7 +713,7 @@ class kprobe():
     self.kprobe_event_remove()
 
     if self.opt_stack != 0:
-        self.stacktrace_enable('0')
+        self.stackprobe_enable('0')
 
 # That is the last code in the function:
     self.post_action = self.ctrl.extract()
@@ -735,7 +773,7 @@ def kprobe_rel_once(app):
 
 def kprobe_config(app):
 #  print("kprobe_config")
-  app.kp.ktrace_config()
+  app.kp.kprobe_config()
 
 def parse_kprobe(app):
     app.parse_kprobe()
@@ -758,7 +796,7 @@ kprobe_opts = {
   "stack" : "stack"
 }
 
-options_select_ktrace = {
+options_select_kprobe = {
                force.rstrip() : False,
                duration.rstrip() : True,
                pid.rstrip() : True,
@@ -770,10 +808,10 @@ options_select_ktrace = {
 
 
 kprobe_skin = {
-  "op_name" : op_name_ktrace,
-  "op_butt" : op_butt_ktrace,
+  "op_name" : op_name_kprobe,
+  "op_butt" : op_butt_kprobe,
   "commands" : "p:icmp_out_p icmp_out_count\nr:icmp_out_r icmp_out_count",
-  "options" : options_select_ktrace,
+  "options" : options_select_kprobe,
   "act"  : kprobe_act,
   "opts" : kprobe_opts
 }
@@ -850,7 +888,7 @@ file_menu = Menu(menubar)
 # add a menu items to the menu
 file_menu.add_command(
     label='Kprobe',
-    command=ap.select_ktrace
+    command=ap.select_kprobe
 )
 
 # add a menu items to the menu
@@ -886,5 +924,5 @@ menubar.add_cascade(
 
 root.mainloop()
 
-
+print("Exit the app")
 
