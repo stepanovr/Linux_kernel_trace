@@ -1,8 +1,13 @@
 # Linux_kernel_trace
 
 The application is written on Python. It has two parts: client and server that communicate over UDP.
-The server target.py is a simple python script that runs on a limited resourses Linux machine that is under debugging target system.
-The client runs on a remote machine that has tkinter packet installed.
+The server usws two files target.py and trace_base.py.
+The server is a python script that runs on a limited resourses Linux machine that is 
+the system under debugging. To run the server copy target.py and trace_base.py to
+the same directory on the target machine and start the server execution with the command
+sudo ./target.py
+
+wThe client runs on a remote machine that has tkinter packet installed.
 
 To install tkinter use Ubuntu sudo apt-get install python3-tk
 
