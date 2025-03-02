@@ -7,7 +7,15 @@ the system under debugging. To run the server copy target.py and trace_base.py t
 the same directory on the target machine and start the server execution with the command
 sudo ./target.py
 
-wThe client runs on a remote machine that has tkinter packet installed.
+Check if debugfs and tracefs are mounted
+$ mount  | grep -e tracefs -e debugfs
+debugfs on /sys/kernel/debug type debugfs (rw,nosuid,nodev,noexec,relatime)
+tracefs on /sys/kernel/tracing type tracefs (rw,nosuid,nodev,noexec,relatime)
+tracefs on /sys/kernel/debug/tracing type tracefs (rw,nosuid,nodev,noexec,relatime)
+
+The tool assumes that the tracefs is mounted to /sys/kernel/debug/tracing .
+
+The client runs on a remote machine that has tkinter packet installed.
 
 To install tkinter use Ubuntu sudo apt-get install python3-tk
 
