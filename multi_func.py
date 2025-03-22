@@ -12,6 +12,7 @@ from tkinter import *
 import tkinter as tk
 import re
 import json
+import trace_base
 
 
 force = "force       "
@@ -32,6 +33,9 @@ op_butt_kprobe = "Read kprobe"
 
 op_name_func = "Operation Func"
 op_butt_func = "Read Func"
+
+op_name_funcgraph = "Operation FuncGraph"
+op_butt_funcgraph = "Read FGraph"
 
 
 # cmd value action target
@@ -210,15 +214,35 @@ class Application(Frame):
     self.serv_port = self.serv_port_ent.get()
     self.serverAddressPort = (self.serv_addr, int(self.serv_port))
     self.udp_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+    self.udp_socket.settimeout(2.0)
+
+    bytesToSend = str.encode("start")
+    self.udp_socket.sendto(bytesToSend, self.serverAddressPort)
+    attempts = 1
+    while True:
+      try:
+        val, address = self.udp_socket.recvfrom(1024)
+        data = str(val, "utf-8")
+        if data == "start":
+            break
+      except socket.timeout:
+          self.udp_socket.sendto(bytesToSend, self.serverAddressPort)
+          attempts += 1
+          if attempts == 5:
+              return "No connection to target"
 
     bytesToSend = str.encode(request)
     self.udp_socket.sendto(bytesToSend, self.serverAddressPort)
-    self.udp_socket.settimeout(2.0)
+
     durat = int(self.duration_ent.get())
-    delta = 1
-    if durat > delta:
-      time.sleep(durat - delta)
+    time.sleep(durat)
     self.log_message(request)
+
+    bytesToSend = str.encode("data")
+    self.udp_socket.sendto(bytesToSend, self.serverAddressPort)
+
+
+
 
     output = ""
     datalen = 0
@@ -226,6 +250,7 @@ class Application(Frame):
     while True:
       try:
         val, address = self.udp_socket.recvfrom(1024)
+
         data = str(val, "utf-8")
         match state:
            case "start":
@@ -238,8 +263,8 @@ class Application(Frame):
                  break
       except socket.timeout:
         print("udp_exchange except")
-        self.log_message(output)
- 
+#        self.log_message(output)
+
         if disp:
           self.display_message(output)
         break;
@@ -341,6 +366,10 @@ class Application(Frame):
     self.set_skin(func_skin)
     self.operation = "func"
 
+  def select_funcgraph(self):
+    self.set_skin(funcgraph_skin)
+    self.operation = "funcgraph"
+
   def select_kprobe(self):
     self.set_skin(kprobe_skin)
     self.operation = "kprobe"
@@ -358,7 +387,16 @@ class Application(Frame):
     options["pid_val"] = int(self.pid_ent.get())
     options["tid_val"] = int(self.tid_ent.get())
     options["filter_val"] = self.filter_ent.get()
-#    options["trace_func"] = 
+    options["time"] = False
+    options["proc"] = False
+    options["tail"] = False
+    options["nodur"] = False
+    options["cpu"] = False
+    options["max"] = False
+    options["max"] = False
+    options["max_val"] = 3
+
+
     options["operation"] = self.operation
     traces = ''
     for trace in self.gettrace():
@@ -369,12 +407,12 @@ class Application(Frame):
     res = self.udp_exchange(opts_str, disp = True).rstrip()
 
     return
-    
+
     print("read_trace")
 
     self.act_name_str.set(self.skin.op_name)
     self.act_button_str.set(self.skin.op_butt)
-    
+
     self.kp.configure()
     self.kp.complete()
     return
@@ -736,6 +774,7 @@ class kprobe():
     res = ''
     for cmd in range(len(self.ctrl.batch)):
       self.ctrl.handle(prog[0][cmd], prog[1][cmd])
+
       res += self.app.udp_exchange(prog[0][cmd], prog[1][cmd])
     return res
 
@@ -846,7 +885,15 @@ func_opts = {
   "tid" : "tid",
   "filter" : "filter",
   "header" : "header",
-  "stack" : "stack"
+  "stack" : "stack",
+   "time" : False,
+   "proc" : False,
+   "tail" : False,
+   "nodur" : False,
+   "cpu" : False,
+   "max" : False,
+   "max" : False,
+   "max_val" : 3,
 }
 
 options_select_func = {
@@ -868,6 +915,44 @@ func_skin = {
   "opts" : func_opts
 }
 
+###
+
+funcgraph_act = {
+#  "config_once" : func_conf_once,
+#  "release_once" : func_rel_once,
+#  "config" : func_config,
+#  "parse" : parse_func
+}
+
+funcgraph_opts = {
+  "force" : "force",
+  "duration" : "duration",
+  "pid" : "pid",
+  "tid" : "tid",
+  "filter" : "filter",
+  "header" : "header",
+  "stack" : "stack"
+}
+
+options_select_funcgraph = {
+               force.rstrip() : False,
+               duration.rstrip() : True,
+               pid.rstrip() : False,
+               tid.rstrip() : False,
+               filter.rstrip() : False,
+               header.rstrip() : False,
+               stack.rstrip() : False
+               }
+
+funcgraph_skin = {
+  "op_name" : op_name_funcgraph,
+  "op_butt" : op_butt_funcgraph,
+  "commands" : "tcp_poll",
+  "options" : options_select_funcgraph,
+  "act"  : funcgraph_act,
+  "opts" : funcgraph_opts
+}
+
 
 ctr = control()
 
@@ -876,6 +961,8 @@ ctr = control()
 
 root = Tk()
 root.title("Kernel tracing")
+print(f"Kernel tracing version: {trace_base.Version}")
+
 # create a menubar
 menubar = Menu(root)
 root.config(menu=menubar)
@@ -895,6 +982,12 @@ file_menu.add_command(
 file_menu.add_command(
     label='Func',
     command=ap.select_func
+)
+
+# add a menu items to the menu
+file_menu.add_command(
+    label='FuncGraph',
+    command=ap.select_funcgraph
 )
 
 

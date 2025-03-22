@@ -1,5 +1,9 @@
 # Linux_kernel_trace
 
+Version 1.0.0 -- March 22 2025
+Added Funcgraph tool allowing displaying the function calls within the requested function.
+Select the tool from the File menu
+
 The application is written on Python. It has two parts: client and server that communicate over UDP.
 The server usws two files target.py and trace_base.py.
 The server is a python script that runs on a limited resourses Linux machine that is 
