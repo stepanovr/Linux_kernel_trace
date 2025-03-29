@@ -162,40 +162,40 @@ e.g.
  fetch unsigned long value of tick_usec symbol.
 ```
 
-According to https://docs.kernel.org/trace/uprobetracer.html
+According to https://www.kernel.org/doc/html//v4.18/trace/kprobetrace.html
 
-### Synopsis of uprobe_tracer
+### Synopsis of kprobe_events
 ```
-p[:[GRP/][EVENT]] PATH:OFFSET [FETCHARGS] : Set a uprobe
-r[:[GRP/][EVENT]] PATH:OFFSET [FETCHARGS] : Set a return uprobe (uretprobe)
-p[:[GRP/][EVENT]] PATH:OFFSET%return [FETCHARGS] : Set a return uprobe (uretprobe)
+ p[:[GRP/]EVENT] [MOD:]SYM[+offs]|MEMADDR [FETCHARGS]  : Set a probe
+ r[MAXACTIVE][:[GRP/]EVENT] [MOD:]SYM[+0] [FETCHARGS]  : Set a return probe
+ -:[GRP/]EVENT                                         : Clear a probe
 
-GRP           : Group name. If omitted, "uprobes" is the default value.
-EVENT         : Event name. If omitted, the event name is generated based
-                on PATH+OFFSET.
-PATH          : Path to an executable or a library.
-OFFSET        : Offset where the probe is inserted.
-OFFSET%return : Offset where the return probe is inserted.
+GRP            : Group name. If omitted, use "kprobes" for it.
+EVENT          : Event name. If omitted, the event name is generated
+                 based on SYM+offs or MEMADDR.
+MOD            : Module name which has given SYM.
+SYM[+offs]     : Symbol+offset where the probe is inserted.
+MEMADDR        : Address where the probe is inserted.
+MAXACTIVE      : Maximum number of instances of the specified function that
+                 can be probed simultaneously, or 0 for the default value
+                 as defined in Documentation/kprobes.txt section 1.3.1.
 
-FETCHARGS     : Arguments. Each probe can have up to 128 args.
- %REG         : Fetch register REG
- @ADDR        : Fetch memory at ADDR (ADDR should be in userspace)
- @+OFFSET     : Fetch memory at OFFSET (OFFSET from same file as PATH)
- $stackN      : Fetch Nth entry of stack (N >= 0)
- $stack       : Fetch stack address.
- $retval      : Fetch return value.(\*1)
- $comm        : Fetch current task comm.
- +|-[u]OFFS(FETCHARG) : Fetch memory at FETCHARG +|- OFFS address.(\*2)(\*3)
- \IMM         : Store an immediate value to the argument.
- NAME=FETCHARG     : Set NAME as the argument name of FETCHARG.
- FETCHARG:TYPE     : Set TYPE as the type of FETCHARG. Currently, basic types
-                     (u8/u16/u32/u64/s8/s16/s32/s64), hexadecimal types
-                     (x8/x16/x32/x64), "string" and bitfield are supported.
+FETCHARGS      : Arguments. Each probe can have up to 128 args.
+ %REG          : Fetch register REG
+ @ADDR         : Fetch memory at ADDR (ADDR should be in kernel)
+ @SYM[+|-offs] : Fetch memory at SYM +|- offs (SYM should be a data symbol)
+ $stackN       : Fetch Nth entry of stack (N >= 0)
+ $stack        : Fetch stack address.
+ $retval       : Fetch return value.(*)
+ $comm         : Fetch current task comm.
+ +|-offs(FETCHARG) : Fetch memory at FETCHARG +|- offs address.(**)
+ NAME=FETCHARG : Set NAME as the argument name of FETCHARG.
+ FETCHARG:TYPE : Set TYPE as the type of FETCHARG. Currently, basic types
+                 (u8/u16/u32/u64/s8/s16/s32/s64), hexadecimal types
+                 (x8/x16/x32/x64), "string" and bitfield are supported.
 
-
-
-(\*1) only for return probe.
-(\*2) this is useful for fetching a field of data structures.
-(\*3) Unlike kprobe event, "u" prefix will just be ignored, because uprobe
-      events can access only user-space memory.
+ (*) only for return probe.
+ (**) this is useful for fetching a field of data structures.
 ```
+
+
