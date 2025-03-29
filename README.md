@@ -74,6 +74,13 @@ CONFIG_FTRACE_MCOUNT_RECORD=y
 CONFIG_FTRACE_MCOUNT_USE_PATCHABLE_FUNCTION_ENTRY=y
 ```
 
+Snother important moment is mounting debugfs.
+Check if it is mounted on /sys/kernel/debug:
+```
+$ mount | grep debugfs
+debugfs on /sys/kernel/debug type debugfs (rw,nosuid,nodev,noexec,relatime)
+```
+
 The application is a Python  implementation of Brendan Gregg's tracing scripts.
 It doesn't access kernel. The debugfs has the tracing tools that are used by the application.
 
