@@ -129,7 +129,7 @@ the registers values.
 p:myprobe do_sys_open dfd=%ax filename=%dx flags=%cx mode=+4($stack)
 
 That example works for x86 CPU.
-The CPU register names for the system calls are following
+### The CPU register names for the system calls are following
  
        Arch/ABI    Instruction           System  Ret  Ret  Error    Notes
                                          call #  val  val2
@@ -170,7 +170,7 @@ https://docs.kernel.org/trace/kprobetrace.html
 git remote add origin git@github.com:stepanovr/Linux_kernel_trace.git
 
 
-kprobe request details
+### kprobe request details
 According to https://events.static.linuxfound.org/slides/lfcs2010_hiramatsu.pdf
 
 p[:[GRP/]EVENT] SYMBOL[+offs]|MEMADDR [FETCHARGS]: Set a probe
@@ -212,12 +212,10 @@ e.g.
 
 According to https://docs.kernel.org/trace/uprobetracer.html
 
-Synopsis of uprobe_tracer
-
+### Synopsis of uprobe_tracer
+```
 p[:[GRP/][EVENT]] PATH:OFFSET [FETCHARGS] : Set a uprobe
-
 r[:[GRP/][EVENT]] PATH:OFFSET [FETCHARGS] : Set a return uprobe (uretprobe)
-
 p[:[GRP/][EVENT]] PATH:OFFSET%return [FETCHARGS] : Set a return uprobe (uretprobe)
 
 
@@ -269,3 +267,4 @@ FETCHARGS     : Arguments. Each probe can have up to 128 args.
 
 (\*3) Unlike kprobe event, "u" prefix will just be ignored, because uprobe
       events can access only user-space memory.
+```
