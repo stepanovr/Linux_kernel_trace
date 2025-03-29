@@ -74,7 +74,7 @@ CONFIG_FTRACE_MCOUNT_RECORD=y
 CONFIG_FTRACE_MCOUNT_USE_PATCHABLE_FUNCTION_ENTRY=y
 ```
 
-Snother important moment is mounting debugfs.
+Another important moment is mounting debugfs.
 Check if it is mounted on /sys/kernel/debug:
 ```
 $ mount | grep debugfs
