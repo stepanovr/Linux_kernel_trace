@@ -205,4 +205,66 @@ FETCHARGS      : Arguments. Each probe can have up to 128 args.
  (**) this is useful for fetching a field of data structures.
 ```
 
+### Build in Yocto
+Create the recipie workspace/recipes/tracer/tracer_git.bb
+```
+devtool add tracer https://github.com/stepanovr/Linux_kernel_trace.git
+```
+
+Modify it to get:
+```
+# Recipe created by recipetool
+# This is the basis of a recipe and may need further editing in order to be fully functional.
+# (Feel free to remove these comments when editing.)
+
+# WARNING: the following LICENSE and LIC_FILES_CHKSUM values are best guesses - it is
+# your responsibility to verify that the values are complete and correct.
+LICENSE = "GPL-2.0-only"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=b234ee4d69f5fce4486a80fdaf4a4263"
+
+SRC_URI = "git://github.com/stepanovr/Linux_kernel_trace.git;protocol=https;branch=master"
+
+# Modify these as desired
+PV = "1.0+git"
+#SRCREV = "dfd162734169b3d6ed8a49f01aa7520fa12a7cfb"
+SRCREV = "ada820a31819eb2cc297894f09989828d9817809"
+
+S = "${WORKDIR}/git"
+
+# The script requires python3 at runtime
+RDEPENDS:${PN} += "python3-core"
+#If your script uses modules (e.g., argparse, json, requests), add the needed ones:
+#RDEPENDS:${PN} += "python3-core python3-io python3-json python3-logging"
+
+# NOTE: no Makefile found, unable to determine what needs to be done
+
+do_configure () {
+        # Specify any needed configure commands here
+        :
+}
+
+do_compile () {
+        # Specify compilation commands here
+        :
+}
+
+do_install () {
+        # Specify install commands here
+        install -d ${D}${bindir}
+        install -m 0755 ${S}/target.py ${D}${bindir}/target.py
+}
+
+```
+
+Add to the conf/local.conf
+
+If Python3 is not insalled then
+```
+IMAGE_INSTALL:append = " python3 tracer"
+```
+
+If python3 is presented already then 
+```
+IMAGE_INSTALL:append = " tracer"
+```
 
